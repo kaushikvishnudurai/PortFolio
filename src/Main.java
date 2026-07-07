@@ -39,19 +39,7 @@ public class Main {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            // TEMP diagnostics for Render deploy debugging — revert to plain message once fixed
-            String driver;
-            try { driver = Class.forName("com.mysql.cj.jdbc.Driver").getProtectionDomain().getCodeSource().getLocation().toString(); }
-            catch (Throwable t) { driver = "LOAD FAILED: " + t; }
-            String lib;
-            try { lib = java.util.Arrays.toString(new java.io.File("lib").listFiles()); }
-            catch (Throwable t) { lib = "ls failed: " + t; }
-            json(ex, 500, Map.of(
-                "error", String.valueOf(e),
-                "classpath", System.getProperty("java.class.path"),
-                "driver", driver,
-                "lib", lib,
-                "cwd", System.getProperty("user.dir")));
+            json(ex, 500, Map.of("error", "backend hiccup — is MySQL running and schema.sql loaded?"));
         }
     }
 
