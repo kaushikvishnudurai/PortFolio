@@ -13,6 +13,18 @@ class Db {
         return (v == null || v.isEmpty()) ? def : v;
     }
 
+    static {
+        // register the driver explicitly; if the jar is missing/corrupt this prints the real reason
+        try { Class.forName("com.mysql.cj.jdbc.Driver"); }
+        catch (Throwable t) {
+            System.err.println("JDBC driver load failed: " + t);
+            System.err.println("java.class.path=" + System.getProperty("java.class.path"));
+            try (var s = java.nio.file.Files.list(java.nio.file.Path.of("lib"))) {
+                s.forEach(p -> System.err.println("lib contains: " + p));
+            } catch (Exception e) { System.err.println("cannot list lib/: " + e); }
+        }
+    }
+
     static Connection open() throws SQLException {
         return DriverManager.getConnection(URL, USER, PASS);
     }
