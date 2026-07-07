@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kaushik Vishnudurai — full stack developer</title>
+<meta name="description" content="Portfolio of Kaushik Vishnudurai — every section of this page is fetched live from MySQL through a hand-written Java server.">
+<meta name="theme-color" id="metatheme" content="#0e1418">
+<script>
+  // set theme before first paint: saved choice wins, otherwise the browser's preference
+  document.documentElement.dataset.theme =
+    localStorage.theme || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;700;900&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e1418; --panel: #141d23; --panel-2: #10181d; --border: #23323b;
+    --text: #cfd6d3; --head: #f0ebe0; --dim: #6d7f7c;
+    --amber: #e8a33d; --teal: #4cc2b4; --red: #e06c5f;
+    --navbg: rgba(14, 20, 24, .92);
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    --sans: "Archivo", system-ui, sans-serif;
+  }
+  html[data-theme="light"] {
+    --bg: #eef0ea; --panel: #f8f9f5; --panel-2: #e6e9e1; --border: #ccd4c9;
+    --text: #3a4541; --head: #1d2624; --dim: #66756f;
+    --amber: #a3660e; --teal: #0d7a6c; --red: #b8483a;
+    --navbg: rgba(238, 240, 234, .92);
+  }
+  /* the terminals stay dark in both themes. some things are sacred. */
+  .session, .term {
+    --panel: #141d23; --panel-2: #10181d; --border: #23323b;
+    --text: #cfd6d3; --head: #f0ebe0; --dim: #6d7f7c;
+    --amber: #e8a33d; --teal: #4cc2b4; --red: #e06c5f;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font: 16px/1.65 var(--sans); overflow-x: clip; transition: background-color .3s, color .3s; }
+  ::selection { background: var(--amber); color: var(--bg); }
+  a { color: var(--teal); text-decoration: none; }
+  a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+  .wrap { max-width: 920px; margin: 0 auto; padding: 0 24px; }
+
+  /* nav */
+  nav {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--navbg); backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--border);
+  }
+  nav .wrap { display: flex; align-items: center; gap: 18px; padding: 12px 175px 12px 24px; font-family: var(--mono); font-size: 13px; }
+  nav a { color: var(--dim); }
+  nav a:hover { color: var(--head); text-decoration: none; }
+  /* lives outside <nav>: its backdrop-filter would hijack position:fixed */
+  .sqlbtn {
+    position: fixed; top: 9px; right: 18px; z-index: 20;
+    font-family: var(--mono); font-size: 12px; color: var(--amber);
+    background: var(--panel); border: 1px solid var(--border); border-radius: 6px;
+    padding: 4px 10px; cursor: pointer; white-space: nowrap;
+  }
+  .sqlbtn:hover { border-color: var(--amber); }
+  .dbdot { margin-left: auto; color: var(--dim); display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+  .dbdot i { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); display: inline-block; animation: pulse 2.4s infinite; }
+  @keyframes pulse { 50% { opacity: .35; } }
+
+  /* hero */
+  header { padding: 84px 0 64px; }
+  .eyebrow { font-family: var(--mono); font-size: 13px; color: var(--amber); letter-spacing: .04em; }
+  h1 {
+    font-family: var(--sans); font-weight: 900; color: var(--head);
+    font-size: clamp(2.4rem, 7vw, 4.2rem); line-height: 1.02;
+    letter-spacing: -0.02em; margin: 10px 0 14px; text-transform: uppercase;
+  }
+  .tagline { font-size: 1.12rem; max-width: 560px; }
+  .tagline b { color: var(--head); font-weight: 700; }
+
+  /* the mysql session card — signature element */
+  .session {
+    margin-top: 44px; background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden; box-shadow: 0 18px 50px -28px rgba(0,0,0,.9);
+  }
+  .session-bar { display: flex; align-items: center; gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--panel); }
+  .session-bar i { width: 11px; height: 11px; border-radius: 50%; background: var(--border); }
+  .session-bar i:first-child { background: var(--red); }
+  .session-bar span { margin-left: 8px; font-family: var(--mono); font-size: 12px; color: var(--dim); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .session pre {
+    padding: 20px 18px; font-family: var(--mono); font-size: 13.5px; line-height: 1.6;
+    overflow-x: auto; white-space: pre; color: var(--text);
+  }
+  .session .p  { color: var(--teal); }
+  .session .q  { color: var(--head); }
+  .session .b  { color: var(--dim); }
+  .session .v  { color: var(--amber); }
+  .caret { display: inline-block; width: 8px; height: 15px; background: var(--amber); vertical-align: -2px; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* sections */
+  section { padding: 58px 0; border-top: 1px solid var(--border); scroll-margin-top: 70px; }
+  .query {
+    font-family: var(--mono); font-size: 13px; color: var(--dim);
+    display: flex; flex-wrap: wrap; gap: 4px 14px; margin-bottom: 8px;
+  }
+  .query .sql { color: var(--teal); overflow-wrap: anywhere; }
+  .query .rows { color: var(--dim); }
+  h2 { font-family: var(--sans); font-weight: 900; color: var(--head); font-size: 1.7rem; letter-spacing: -0.01em; text-transform: uppercase; margin-bottom: 26px; }
+
+  .bio { font-size: 1.08rem; max-width: 640px; white-space: pre-line; }
+  .tl p { white-space: pre-line; }
+  .skills-note { margin-top: 16px; color: var(--text); font-size: .95rem; max-width: 620px; padding-left: 14px; border-left: 2px solid var(--teal); }
+  .skills-note + .skills-note { border-left-color: var(--amber); font-family: var(--mono); font-size: .85rem; color: var(--amber); }
+
+  /* journey */
+  .tl { list-style: none; padding: 0; position: relative; }
+  .tl::before { content: ""; position: absolute; left: 95px; top: 6px; bottom: 6px; width: 1px; background: var(--border); }
+  .tl li { display: grid; grid-template-columns: 78px 36px 1fr; padding: 14px 0; }
+  .tl .when { font-family: var(--mono); font-size: 12.5px; color: var(--amber); text-align: right; padding-top: 3px; }
+  .tl .node { position: relative; }
+  .tl .node i { position: absolute; left: 13px; top: 8px; width: 9px; height: 9px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 0 4px var(--bg); }
+  .tl h3 { color: var(--head); font-size: 1.05rem; font-weight: 700; }
+  .tl p { color: var(--dim); font-size: .95rem; max-width: 560px; }
+
+  /* skills */
+  .skillgrp { display: flex; gap: 16px; margin-bottom: 18px; align-items: baseline; flex-wrap: wrap; }
+  .skillgrp .cat { font-family: var(--mono); font-size: 12.5px; color: var(--amber); min-width: 84px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    font-family: var(--mono); font-size: 13px; color: var(--text);
+    border: 1px solid var(--border); background: var(--panel); border-radius: 6px; padding: 5px 12px;
+  }
+
+  /* projects */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 22px; display: flex; flex-direction: column; gap: 10px;
+    transition: border-color .18s, transform .18s;
+  }
+  .card:hover { border-color: var(--amber); transform: translateY(-3px); }
+  .card .period { font-family: var(--mono); font-size: 12px; color: var(--dim); }
+  .card h3 { color: var(--head); font-size: 1.15rem; font-weight: 700; }
+  .card p { font-size: .95rem; }
+  .card .stack { font-family: var(--mono); font-size: 12.5px; color: var(--teal); margin-top: auto; }
+  .card .lesson { font-size: .88rem; color: var(--dim); font-style: italic; }
+
+  /* terminal */
+  .term { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; transition: background-color .3s; }
+  /* terminal color profiles, like the real thing */
+  .term[data-profile="homebrew"] { --panel: #0c0c0c; --panel-2: #000000; --border: #243324; --text: #9fdf9f; --head: #e9ffe9; --dim: #557a55; --amber: #d9b64e; --teal: #3ad353; --red: #ff6b6b; }
+  .term[data-profile="ubuntu"]   { --panel: #2c091f; --panel-2: #300a24; --border: #55204a; --text: #eeeeec; --head: #ffffff; --dim: #a08a9b; --amber: #e95420; --teal: #8ae234; --red: #ef2929; }
+  .term[data-profile="dracula"]  { --panel: #21222c; --panel-2: #282a36; --border: #44475a; --text: #f8f8f2; --head: #ffffff; --dim: #6272a4; --amber: #ffb86c; --teal: #8be9fd; --red: #ff5555; }
+  #tout { height: 360px; overflow-y: auto; padding: 16px 18px; font-family: var(--mono); font-size: 13.5px; line-height: 1.6; }
+  #tout div { white-space: pre-wrap; word-break: break-word; }
+  .tin { display: flex; padding: 10px 18px 14px; border-top: 1px solid var(--border); font-family: var(--mono); font-size: 13.5px; }
+  .tin .ps1 { color: var(--teal); margin-right: 8px; white-space: nowrap; }
+  .tin input { flex: 1; background: none; border: none; outline: none; color: var(--text); font: inherit; caret-color: var(--amber); caret-shape: block; }
+  .g { color: var(--teal); } .a { color: var(--amber); } .d { color: var(--dim); } .r { color: var(--red); } .h { color: var(--head); }
+  .k { color: var(--amber); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+  .k:hover { color: var(--teal); }
+
+  /* contact */
+  .contact-mail { font-family: var(--mono); font-size: clamp(1.05rem, 3.4vw, 1.6rem); color: var(--head); font-weight: 600; }
+  .contact-rows { margin-top: 18px; font-family: var(--mono); font-size: 14px; display: grid; gap: 6px; }
+  .contact-rows span { color: var(--dim); display: inline-block; min-width: 90px; }
+  .coffee { margin-top: 26px; color: var(--text); max-width: 560px; }
+  .coffee .punch { display: block; margin-top: 8px; font-family: var(--mono); font-size: .9rem; color: var(--amber); }
+
+  footer { border-top: 1px solid var(--border); padding: 26px 0 40px; font-family: var(--mono); font-size: 12.5px; color: var(--dim); }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 6px 24px; }
+  footer b { color: var(--amber); font-weight: 600; }
+
+  @media (max-width: 640px) {
+    nav .wrap { overflow-x: auto; padding: 12px 16px; gap: 14px; scrollbar-width: none; }
+    nav .wrap::-webkit-scrollbar { display: none; }
+    .wrap { padding-left: 18px; padding-right: 18px; }
+    header { padding: 48px 0 44px; }
+    .session { margin-top: 30px; }
+    .session pre { font-size: 11px; padding: 14px 12px; }
+    section { padding: 40px 0; }
+    h2 { margin-bottom: 20px; }
+    .tl::before { left: 17px; }
+    .tl li { grid-template-columns: 36px 1fr; }
+    .tl .when { grid-column: 2; text-align: left; order: -1; padding: 0; }
+    .tl .node { grid-row: span 2; grid-column: 1; }
+    .tl .node i { left: 13px; }
+    .skillgrp { flex-direction: column; gap: 8px; }
+    #tout { height: 300px; font-size: 12.5px; }
+    .tin { font-size: 12.5px; padding: 10px 12px 12px; }
+    /* 16px stops iOS Safari from zooming the page when the input gets focus */
+    .tin input { font-size: 16px; }
+    .card { padding: 18px; }
+    .cards { grid-template-columns: 1fr; }
+    /* the theme toggle drops to the bottom, within thumb's reach */
+    .sqlbtn {
+      top: auto; bottom: 14px; right: 14px; padding: 8px 12px;
+      box-shadow: 0 6px 20px -8px rgba(0,0,0,.65);
+    }
+    footer { padding-bottom: 72px; }
+  }
+  @media (max-width: 420px) {
+    .session pre { font-size: 10px; }
+    .dbdot { display: none; }
+    .tagline { font-size: 1rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+    html { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a href="#about">about</a>
+  <a href="#journey">journey</a>
+  <a href="#skills">skills</a>
+  <a href="#projects">projects</a>
+  <a href="#terminal">terminal</a>
+  <a href="#contact">contact</a>
+  <span class="dbdot"><i></i>db: connected</span>
+</div></nav>
+<button id="themer" class="sqlbtn" type="button" aria-label="switch color theme"></button>
+
+<header class="wrap">
+  <div class="eyebrow">// tech tinkerer · likes backend · still figuring things out</div>
+  <h1>Kaushik<br>Vishnudurai</h1>
+  <p class="tagline">Full Stack Developer Intern working with the <b>Zoho CRM</b> team. I work across the stack, but backend development is what I enjoy the most. This portfolio is also one of my projects: the data you see here is stored in MySQL and served through a Java backend.</p>
+
+  <div class="session" aria-label="MySQL session">
+    <div class="session-bar"><i></i><i></i><i></i><span>mysql — kaushik_portfolio</span></div>
+    <pre id="hero-pre"><span class="p">mysql&gt;</span> <span id="hero-q" class="q"></span><span class="caret" id="hero-caret"></span><span id="hero-result"></span></pre>
+  </div>
+</header>
+
+<section id="about"><div class="wrap">
+  <div class="query"><span class="sql">SELECT bio FROM profile WHERE id = 1;</span><span class="rows" data-rows></span></div>
+  <h2>About</h2>
+  <p class="bio" id="bio">…</p>
+</div></section>
+
+<section id="journey"><div class="wrap">
+  <div class="query"><span class="sql">SELECT label, title, detail FROM journey ORDER BY sort_order;</span><span class="rows" data-rows></span></div>
+  <h2>Journey</h2>
+  <ul class="tl" id="tl"></ul>
+</div></section>
+
+<section id="skills"><div class="wrap">
+  <div class="query"><span class="sql">SELECT name, category FROM skills ORDER BY category;</span><span class="rows" data-rows></span></div>
+  <h2>Skills</h2>
+  <div id="skills-box"></div>
+  <p class="skills-note">I use AI tools as part of my normal workflow: exploring unfamiliar code, debugging, reviewing approaches and speeding up repetitive work. I verify what they generate before using it, because confident code can still be confidently wrong.</p>
+  <p class="skills-note">Still learning. This list is definitely not finished.</p>
+</div></section>
+
+<section id="projects"><div class="wrap">
+  <div class="query"><span class="sql">SELECT name, period, stack FROM projects;</span><span class="rows" data-rows></span></div>
+  <h2>Projects</h2>
+  <div class="cards" id="cards"></div>
+</div></section>
+
+<section id="terminal"><div class="wrap">
+  <div class="query"><span class="sql">-- prefer typing? talk to the backend yourself</span></div>
+  <h2>Terminal</h2>
+  <div class="term">
+    <div class="session-bar"><i></i><i></i><i></i><span>guest@kaushik: ~ — bash — 80×24</span></div>
+    <div id="tout"></div>
+    <div class="tin">
+      <span class="ps1">guest@kaushik:~$</span>
+      <input id="tcmd" autocomplete="off" spellcheck="false" aria-label="terminal command input">
+    </div>
+  </div>
+</div></section>
+
+<section id="contact"><div class="wrap">
+  <div class="query"><span class="sql">SELECT email, linkedin FROM profile;</span><span class="rows" data-rows></span></div>
+  <h2>Contact</h2>
+  <a class="contact-mail" id="c-mail" href="#">…</a>
+  <div class="contact-rows">
+    <div><span>linkedin</span> <a id="c-li" href="#" target="_blank" rel="noopener">…</a></div>
+    <div id="c-gh-row" hidden><span>github</span> <a id="c-gh" href="#" target="_blank" rel="noopener">…</a></div>
+  </div>
+  <p class="coffee">If you want to talk about tech, projects, ideas, or a bug that makes absolutely no sense, feel free to reach out.<span class="punch">// coffee is optional. bugs will appear anyway.</span></p>
+</div></section>
+
+<footer><div class="wrap">
+  <span>you are visitor <b id="f-visits">#…</b></span>
+  <span><b id="f-sign">…</b> guestbook signatures</span>
+  <span>served by a small Java server and MySQL</span>
+</div></footer>
+
+<script>
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const $ = id => document.getElementById(id);
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+async function api(p, section) {
+  const t0 = performance.now();
+  const r = await fetch('/api/' + p);
+  const data = await r.json();
+  if (section) {
+    const el = document.querySelector('#' + section + ' [data-rows]');
+    const n = Array.isArray(data) ? data.length : 1;
+    if (el) el.textContent = `-- ${n} row${n === 1 ? '' : 's'} in set (${((performance.now() - t0) / 1000).toFixed(3)} sec)`;
+  }
+  return data;
+}
+
+/* ---- hero: type the query, then show the result set ---- */
+const HERO_Q = 'SELECT * FROM engineers WHERE curiosity > fear LIMIT 1;';
+async function hero(p) {
+  const q = $('hero-q');
+  if (reduced) { q.textContent = HERO_Q; }
+  else {
+    for (const ch of HERO_Q) { q.textContent += ch; await new Promise(r => setTimeout(r, 34)); }
+    await new Promise(r => setTimeout(r, 380));
+  }
+  $('hero-caret').remove();
+  const rows = [['name', p.name], ['role', p.role], ['location', p.location], ['status', 'learning, building, debugging']];
+  const w1 = Math.max(...rows.map(r => r[0].length)), w2 = Math.max(...rows.map(r => r[1].length));
+  const line = `<span class="b">+${'-'.repeat(w1 + 2)}+${'-'.repeat(w2 + 2)}+</span>`;
+  let out = '\n' + line + '\n';
+  for (const [k, v] of rows)
+    out += `<span class="b">|</span> ${esc(k.padEnd(w1))} <span class="b">|</span> <span class="v">${esc(v.padEnd(w2))}</span> <span class="b">|</span>\n`;
+  out += line + `\n<span class="b">1 row in set (0.00 sec)</span>\n\n<span class="v">Yep, that's me.</span>`;
+  $('hero-result').innerHTML = out;
+}
+
+/* ---- sections ---- */
+async function load() {
+  const p = await api('profile', 'about');
+  hero(p);
+  $('bio').textContent = p.bio;
+  $('c-mail').textContent = p.email;  $('c-mail').href = 'mailto:' + p.email;
+  $('c-li').textContent = p.linkedin.replace('https://www.', ''); $('c-li').href = p.linkedin;
+  if (p.github) { $('c-gh-row').hidden = false; $('c-gh').textContent = p.github.replace('https://', ''); $('c-gh').href = p.github; }
+  document.querySelector('#contact [data-rows]').textContent = '-- 1 row in set';
+
+  const journey = await api('journey', 'journey');
+  $('tl').innerHTML = journey.map(j =>
+    `<li><span class="when">${esc(j.label)}</span><span class="node"><i></i></span><div><h3>${esc(j.title)}</h3><p>${esc(j.detail || '')}</p></div></li>`).join('');
+
+  const skills = await api('skills', 'skills');
+  const CAT_ORDER = ['backend', 'frontend', 'ai-assisted development', 'tools & technology'];
+  const cats = [...new Set(skills.map(s => s.category))]
+    .sort((a, b) => ((CAT_ORDER.indexOf(a) + 1) || 99) - ((CAT_ORDER.indexOf(b) + 1) || 99));
+  $('skills-box').innerHTML = cats.map(c =>
+    `<div class="skillgrp"><span class="cat">${esc(c)}</span><span class="chips">${
+      skills.filter(s => s.category === c).map(s => `<span class="chip">${esc(s.name)}</span>`).join('')
+    }</span></div>`).join('');
+
+  const projects = await api('projects', 'projects');
+  $('cards').innerHTML = projects.map(pr =>
+    `<article class="card"><span class="period">${esc(pr.period || '')}</span><h3>${esc(pr.name)}</h3><p>${esc(pr.description)}</p><span class="stack">${esc(pr.stack)}</span><span class="lesson">${esc(pr.lesson || '')}</span></article>`).join('');
+
+  const s = await api('stats');
+  $('f-visits').textContent = '#' + s.visits;
+  $('f-sign').textContent = s.signatures;
+}
+load().catch(() => { $('bio').textContent = 'Backend unreachable — is the Java server and MySQL running?'; });
+
+/* ---- terminal ---- */
+const tout = $('tout'), tcmd = $('tcmd');
+const hist = []; let hi = -1;
+let signState = null, signName = '';
+
+function tprint(html) {
+  const d = document.createElement('div');
+  d.innerHTML = html;
+  tout.appendChild(d);
+  tout.scrollTop = tout.scrollHeight;
+}
+const k = c => `<span class="k" onclick="trun('${c}')">${c}</span>`;
+
+const reads = {
+  async 'about.txt'() {
+    const p = await api('profile');
+    tprint(`<span class="h">${esc(p.name)}</span>\n<span class="a">${esc(p.role)}</span>\n<span class="d">${esc(p.location)}</span>\n\n${esc(p.bio)}`);
+  },
+  async 'skills.txt'() {
+    const rows = await api('skills');
+    let out = '', cat = '';
+    for (const s of rows) {
+      if (s.category !== cat) { cat = s.category; out += `\n<span class="a"># ${esc(cat)}</span>\n`; }
+      out += `${esc(s.name)}\n`;
+    }
+    tprint(out.trim());
+  },
+  async 'projects.txt'() {
+    const rows = await api('projects');
+    tprint(rows.map(p =>
+      `<span class="h">${esc(p.name)}</span> <span class="d">(${esc(p.period || '')})</span>\n${esc(p.description)}\n<span class="g">stack:</span> ${esc(p.stack)}`).join('\n\n'));
+  },
+  async 'journey.txt'() {
+    const rows = await api('journey');
+    tprint(rows.map(j => `<span class="a">${esc(j.label.padEnd(9))}</span> <span class="h">${esc(j.title)}</span>\n          ${esc(j.detail || '')}`).join('\n'));
+  },
+  async 'contact.txt'() {
+    const p = await api('profile');
+    tprint(`email:    <a href="mailto:${esc(p.email)}">${esc(p.email)}</a>\nlinkedin: <a href="${esc(p.linkedin)}" target="_blank" rel="noopener">${esc(p.linkedin)}</a>`);
+  },
+  async 'guestbook.txt'() {
+    const rows = await api('guestbook');
+    if (!rows.length) return tprint(`<span class="d">(empty. add a line with ${k('sign')})</span>`);
+    tprint(rows.map(g => `<span class="d">${esc(g.date)}</span> <span class="h">${esc(g.name)}</span>: ${esc(g.message)}`).join('\n'));
+  },
+};
+const FILES = Object.keys(reads);
+
+const cmds = {
+  help() { tprint(
+`${k('ls')}             list files
+cat &lt;file&gt;     read one, e.g. ${k('cat about.txt')} or ${k('cat projects.txt')}
+${k('sign')}           add a line to guestbook.txt (a real INSERT into MySQL)
+${k('neofetch')}       what this page can see about YOUR machine 👀
+${k('profile')}        change this terminal's colors
+${k('stats')}          live counts from the database
+${k('api')}            the raw endpoints, if you'd rather curl
+also: pwd, whoami, date, echo, history, clear, theme light|dark`); },
+  ls() { tprint(FILES.join('  ')); },
+  neofetch() {
+    const ua = navigator.userAgent;
+    const os = /iPhone|iPad/.test(ua) ? 'iOS' : /Android/.test(ua) ? 'Android'
+      : /Mac OS X/.test(ua) ? 'macOS' : /Windows/.test(ua) ? 'Windows'
+      : /Linux/.test(ua) ? 'Linux' : 'something exotic';
+    const browser =
+      ua.includes('Edg/')     ? 'Edge '    + ua.split('Edg/')[1].split('.')[0] :
+      ua.includes('OPR/')     ? 'Opera '   + ua.split('OPR/')[1].split('.')[0] :
+      ua.includes('Firefox/') ? 'Firefox ' + ua.split('Firefox/')[1].split('.')[0] :
+      ua.includes('Chrome/')  ? 'Chrome '  + ua.split('Chrome/')[1].split('.')[0] :
+      ua.includes('Version/') ? 'Safari '  + ua.split('Version/')[1].split('.')[0] : 'a mystery browser';
+    const info = [
+      ['os', os],
+      ['browser', browser],
+      ['device', /Mobi|Android|iPhone/.test(ua) ? 'mobile' : 'desktop'],
+      ['screen', screen.width + '×' + screen.height],
+      ['window', innerWidth + '×' + innerHeight],
+      ['cpu cores', navigator.hardwareConcurrency || 'hidden'],
+      ['language', navigator.language],
+      ['timezone', Intl.DateTimeFormat().resolvedOptions().timeZone],
+      ['local time', new Date().toLocaleTimeString()],
+      ['theme', matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'],
+    ];
+    const art = ['  ( (   ', '   ) )  ', ' ┌─────┐', ' │     ├┐', ' │     ││', ' │     ├┘', ' └─────┘', '        '];
+    let out = `<span class="h">guest</span>@<span class="h">your-machine</span>\n<span class="d">─────────────────</span>\n`;
+    const n = Math.max(art.length, info.length);
+    for (let i = 0; i < n; i++) {
+      const a = `<span class="a">${esc(art[i] || '        ')}</span>`;
+      const kv = info[i] ? `<span class="g">${info[i][0].padEnd(11)}</span>${esc(String(info[i][1]))}` : '';
+      out += `${a}  ${kv}\n`;
+    }
+    out += `<span class="d">no server involved. your browser told me all of this for free.</span>`;
+    tprint(out);
+  },
+  pwd() { tprint('/home/guest'); },
+  whoami() { tprint(`guest\n<span class="d">(the interesting one is in ${k('cat about.txt')})</span>`); },
+  date() { tprint(esc(new Date().toString())); },
+  history() { tprint(hist.map((h, i) => `  ${String(i + 1).padStart(3)}  ${esc(h)}`).join('\n') || '<span class="d">(empty)</span>'); },
+  sign() { signState = 'name'; tprint(`appending to guestbook.txt, this does a real INSERT.\n<span class="a">your name?</span>`); },
+  async stats() {
+    const s = await api('stats');
+    tprint(`page visits       : <span class="a">${s.visits}</span>\nguestbook entries : <span class="a">${s.signatures}</span>\n<span class="d">every page load INSERTs a row into the visits table. you're in there.</span>`);
+  },
+  api() { tprint(
+`<span class="g">GET</span>  /api/profile   <span class="g">GET</span> /api/skills   <span class="g">GET</span> /api/projects
+<span class="g">GET</span>  /api/journey   <span class="g">GET</span> /api/guestbook   <span class="g">GET</span> /api/stats
+<span class="a">POST</span> /api/guestbook <span class="d">(form: name, message)</span>
+
+<span class="d">try it: curl ${location.origin}/api/profile</span>`); },
+  clear() { tout.innerHTML = ''; },
+  sudo() { tprint(`<span class="r">guest is not in the sudoers file. This incident will be reported to Kaushik.</span>`); },
+};
+// shortcuts: 'skills' works like 'cat skills.txt', etc.
+for (const f of FILES) cmds[f.replace('.txt', '')] = reads[f];
+cmds.sysinfo = cmds.neofetch;
+
+async function trun(raw) {
+  const cmd = raw.trim();
+  tprint(`<span class="g">guest@kaushik:~$</span> ${esc(cmd)}`);
+  if (!cmd) return;
+  if (signState === 'name') {
+    signName = cmd.slice(0, 60); signState = 'message';
+    tprint(`<span class="a">your message?</span> <span class="d">(max 280 chars)</span>`);
+    return;
+  }
+  if (signState === 'message') {
+    signState = null;
+    const r = await fetch('/api/guestbook', {
+      method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: 'name=' + encodeURIComponent(signName) + '&message=' + encodeURIComponent(cmd.slice(0, 280)),
+    });
+    const j = await r.json();
+    tprint(r.ok ? `<span class="g">✓ committed.</span> read it back: ${k('cat guestbook.txt')}`
+                : `<span class="r">${esc(j.error || 'failed')}</span>`);
+    return;
+  }
+  hist.push(cmd); hi = hist.length;
+  const parts = cmd.split(/\s+/);
+  const c = parts[0].toLowerCase();
+  try {
+    if (c === 'cat') {
+      const f = (parts[1] || '').toLowerCase();
+      if (reads[f]) await reads[f]();
+      else tprint(f ? `cat: ${esc(f)}: No such file or directory` : `cat: missing file. try ${k('ls')}`);
+    }
+    else if (c === 'echo') tprint(esc(parts.slice(1).join(' ')) || ' ');
+    else if (cmds[c]) await cmds[c](parts);
+    else tprint(`-bash: ${esc(c)}: command not found`);
+  } catch { tprint(`<span class="r">backend error. is the Java server and MySQL still up?</span>`); }
+}
+
+tcmd.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { const v = tcmd.value; tcmd.value = ''; trun(v); }
+  else if (e.key === 'ArrowUp' && hi > 0) tcmd.value = hist[--hi];
+  else if (e.key === 'ArrowDown') tcmd.value = hi < hist.length - 1 ? hist[++hi] : (hi = hist.length, '');
+});
+document.querySelector('.term').addEventListener('click', e => {
+  if (!getSelection().toString() && e.target.tagName !== 'A') tcmd.focus();
+});
+/* ---- theme: browser preference by default, SQL to change ---- */
+const themer = $('themer');
+const curTheme = () => document.documentElement.dataset.theme;
+function paintTheme() {
+  themer.textContent = `SET theme='${curTheme() === 'dark' ? 'light' : 'dark'}';`;
+  $('metatheme').content = curTheme() === 'dark' ? '#0e1418' : '#eef0ea';
+}
+function setTheme(t) {
+  if (t === curTheme()) return;
+  document.documentElement.dataset.theme = t;
+  localStorage.theme = t;
+  themer.textContent = '-- 1 row affected';
+  setTimeout(paintTheme, 900);
+  if (!setTheme.said) setTheme.said = {};
+  if (!setTheme.said[t]) {
+    setTheme.said[t] = true;
+    tprint(t === 'light'
+      ? `<span class="d">terminal: staying dark. some things are sacred.</span>`
+      : `<span class="d">terminal: good call.</span>`);
+  }
+}
+themer.onclick = () => setTheme(curTheme() === 'dark' ? 'light' : 'dark');
+matchMedia('(prefers-color-scheme: light)').addEventListener('change', e => {
+  if (!localStorage.theme) { document.documentElement.dataset.theme = e.matches ? 'light' : 'dark'; paintTheme(); }
+});
+paintTheme();
+/* ---- terminal color profiles ---- */
+const PROFILES = ['default', 'homebrew', 'ubuntu', 'dracula'];
+const termEl = document.querySelector('.term');
+if (PROFILES.includes(localStorage.termProfile)) termEl.dataset.profile = localStorage.termProfile;
+cmds.profile = parts => {
+  const p = (parts[1] || '').toLowerCase();
+  if (PROFILES.includes(p)) {
+    termEl.dataset.profile = p;
+    localStorage.termProfile = p;
+    tprint(`profile set to <span class="a">${p}</span>`);
+  } else {
+    tprint(`pick one: ${PROFILES.map(x => k('profile ' + x)).join('  ')}\ncurrent: <span class="a">${termEl.dataset.profile || 'default'}</span>`);
+  }
+};
+
+cmds.theme = parts => {
+  const t = (parts[1] || '').toLowerCase();
+  if (t === 'light' || t === 'dark') { setTheme(t); tprint(`theme is now ${t}`); }
+  else tprint(`theme: currently ${curTheme()}. usage: theme light|dark`);
+};
+
+const now = new Date();
+tprint(`Last login: ${now.toDateString().slice(0, 10)} ${now.toTimeString().slice(0, 8)} on ttys001`);
+tprint(`<span class="g">guest@kaushik:~$</span> ls`);
+cmds.ls();
+tprint(`<span class="d">The commands here are connected to the same Java and MySQL backend as the rest of the page.\nType ${k('help')} if you don't know where to start.</span>`);
+</script>
+</body>
+</html>

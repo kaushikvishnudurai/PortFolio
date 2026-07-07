@@ -1,0 +1,4 @@
+lib/
+out/
+*.png
+node_modules/
