@@ -512,6 +512,20 @@ async function trun(raw) {
 
 tcmd.addEventListener('keydown', e => {
   if (e.key === 'Enter') { const v = tcmd.value; tcmd.value = ''; trun(v); }
+  else if (e.key === 'Tab') {
+    e.preventDefault();
+    if (signState) return; // mid-guestbook prompt, nothing to complete
+    const parts = tcmd.value.split(/\s+/);
+    const last = parts[parts.length - 1].toLowerCase();
+    const pool = parts.length > 1 ? FILES : [...Object.keys(cmds), 'cat', 'echo'];
+    const m = pool.filter(x => x.startsWith(last));
+    if (!m.length) return;
+    let p = m[0];
+    for (const x of m) while (!x.startsWith(p)) p = p.slice(0, -1); // longest common prefix
+    parts[parts.length - 1] = p;
+    tcmd.value = parts.join(' ') + (m.length === 1 ? ' ' : '');
+    if (m.length > 1) tprint(m.map(esc).join('  '));
+  }
   else if (e.key === 'ArrowUp' && hi > 0) tcmd.value = hist[--hi];
   else if (e.key === 'ArrowDown') tcmd.value = hi < hist.length - 1 ? hist[++hi] : (hi = hist.length, '');
 });
