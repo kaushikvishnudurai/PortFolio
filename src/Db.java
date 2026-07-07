@@ -9,7 +9,7 @@ class Db {
 
     static String env(String key, String def) {
         String v = System.getenv(key);
-        if (v != null) v = v.trim(); // stray whitespace in DB_URL = "No suitable driver found"
+        if (v != null) v = v.split("\\R", 2)[0].trim(); // pasted junk after line 1 = "No suitable driver found"
         return (v == null || v.isEmpty()) ? def : v;
     }
 
